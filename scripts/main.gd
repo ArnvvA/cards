@@ -2,7 +2,6 @@ extends Node2D
 
 const CARD_WIDTH  := 126
 const CARD_HEIGHT := 176
-#const CARD_COUNT  := 52
 
 # Deck origin: viewport_centre minus half card dimensions (1920x1080)
 var deck_pos         := Vector2(960 - 63, 540 - 88)
@@ -19,6 +18,22 @@ var card_sound  : AudioStream
 var crt_material: ShaderMaterial
 var elapsed     := 0.0
 
+var back_path = "res://assets/card_back.webp"
+
+
+#func _ready() -> void:
+	#card_scene = preload("res://scenes/card.tscn")
+	#card_sound = preload("res://assets/card.ogg")
+#
+	#deck_rect         = Rect2(deck_pos, Vector2(CARD_WIDTH, CARD_HEIGHT))
+	#return_btn_center = Vector2(deck_pos.x + CARD_WIDTH / 2.0, deck_pos.y + CARD_HEIGHT + 50.0)
+#
+	## CRT setup
+	#var overlay := $CRTLayer/CRTOverlay
+	#if overlay.material is ShaderMaterial:
+		#crt_material = overlay.material as ShaderMaterial
+		#crt_material.set_shader_parameter("resolution", Vector2(1920.0, 1080.0))
+
 func _ready() -> void:
 	card_scene = preload("res://scenes/card.tscn")
 	card_sound = preload("res://assets/card.ogg")
@@ -32,19 +47,21 @@ func _ready() -> void:
 		crt_material = overlay.material as ShaderMaterial
 		crt_material.set_shader_parameter("resolution", Vector2(1920.0, 1080.0))
 
-	# 👉 DECK SPAWN (OUTSIDE the shader if-block)
+	# 👉 DECK SPAWN
 	var deck_paths = _load_deck()
+	var back_path = "res://assets/card_back.webp"   # ⭐ ADD THIS
 
 	for path in deck_paths:
 		var card = card_scene.instantiate()
 		add_child(card)
 		card.setup(deck_pos)
 
-		# 👉 THIS is where it belongs
 		card.set_card_texture(path, Vector2(CARD_WIDTH, CARD_HEIGHT))
+		card.set_back_texture(back_path)            # ⭐ ADD THIS
 
 		all_cards.append(card)
 		deck_cards.append(card)
+
 
 func _load_deck() -> Array:
 	var deck := []
@@ -126,15 +143,32 @@ func _input(event: InputEvent) -> void:
 		else:
 			_on_release()
 
-
-# Hit-test topmost card; fall back to return-button check.
 func _on_press(pos: Vector2) -> void:
 	var sorted := all_cards.duplicate()
 	sorted.sort_custom(func(a, b): return a.z_index > b.z_index)
+
+	# --- CARD CLICK ---
 	for card in sorted:
 		if Rect2(card.position, Vector2(CARD_WIDTH, CARD_HEIGHT)).has_point(pos):
+			card.handle_click()
 			card.dragging = true
 			return
+
+	# --- RETURN BUTTON ---
+	if pos.distance_to(return_btn_center) <= RETURN_BTN_RADIUS:
+		var count := 1
+		for card in all_cards:
+			if not card.is_on_deck:
+				card.is_on_deck = true
+				deck_cards.append(card)
+
+				card.force_face_up()   # ⭐ THIS is where it belongs
+
+				sound_queue.append({
+					"delay": count * 0.05,
+					"pitch": 1.0 + count * 0.2
+				})
+				count += 1
 
 	# Return button — recall all off-deck cards with staggered ascending chime
 	if pos.distance_to(return_btn_center) <= RETURN_BTN_RADIUS:
@@ -145,7 +179,6 @@ func _on_press(pos: Vector2) -> void:
 				deck_cards.append(card)
 				sound_queue.append({"delay": count * 0.05, "pitch": 1.0 + count * 0.2})
 				count += 1
-
 
 # On release: decide deck membership based on where the card landed.
 func _on_release() -> void:
@@ -160,6 +193,9 @@ func _on_release() -> void:
 				card.is_on_deck = true
 				if not deck_cards.has(card):
 					deck_cards.append(card)
+
+				card.force_face_up()   # ⭐ ADD THIS LINE HERE
+
 			else:
 				# Dropped off deck → leave (or stay off) the deck
 				card.is_on_deck = false
