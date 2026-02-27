@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://bgtnrdwro58aa"]
+[gd_scene format=3 uid="uid://bgtnrdwro58aa"]
 
 [ext_resource type="Shader" uid="uid://cdrfn1rg4wqs1" path="res://shaders/crt.gdshader" id="1"]
 [ext_resource type="Script" uid="uid://d15tqovip72po" path="res://scripts/main.gd" id="2"]
@@ -8,13 +8,13 @@ shader = ExtResource("1")
 shader_parameter/millis = 0.0
 shader_parameter/resolution = Vector2(1920, 1080)
 
-[node name="Game" type="Node2D"]
+[node name="Game" type="Node2D" unique_id=2135820814]
 script = ExtResource("2")
 
-[node name="CRTLayer" type="CanvasLayer" parent="."]
+[node name="CRTLayer" type="CanvasLayer" parent="." unique_id=1630608655]
 layer = 10
 
-[node name="CRTOverlay" type="ColorRect" parent="CRTLayer"]
+[node name="CRTOverlay" type="ColorRect" parent="CRTLayer" unique_id=217263349]
 material = SubResource("ShaderMaterial_1")
 offset_right = 1920.0
 offset_bottom = 1080.0

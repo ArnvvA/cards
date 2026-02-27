@@ -64,7 +64,7 @@ func _load_deck() -> Array:
 	return deck
 
 func _align() -> void:
-	var offset := Vector2(-0.25, 0.25)  # left + down
+	var offset := Vector2(-0.25, 0.25) 
 
 	for i in deck_cards.size():
 		var card = deck_cards[i]
