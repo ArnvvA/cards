@@ -2,7 +2,7 @@ extends Node2D
 
 const CARD_WIDTH  := 126
 const CARD_HEIGHT := 176
-const CARD_COUNT  := 52
+#const CARD_COUNT  := 52
 
 # Deck origin: viewport_centre minus half card dimensions (1920x1080)
 var deck_pos         := Vector2(960 - 63, 540 - 88)
@@ -19,39 +19,57 @@ var card_sound  : AudioStream
 var crt_material: ShaderMaterial
 var elapsed     := 0.0
 
-
 func _ready() -> void:
 	card_scene = preload("res://scenes/card.tscn")
 	card_sound = preload("res://assets/card.ogg")
 
-	deck_rect          = Rect2(deck_pos, Vector2(CARD_WIDTH, CARD_HEIGHT))
-	return_btn_center  = Vector2(deck_pos.x + CARD_WIDTH / 2.0, deck_pos.y + CARD_HEIGHT + 50.0)
+	deck_rect         = Rect2(deck_pos, Vector2(CARD_WIDTH, CARD_HEIGHT))
+	return_btn_center = Vector2(deck_pos.x + CARD_WIDTH / 2.0, deck_pos.y + CARD_HEIGHT + 50.0)
 
-	# The CRT ShaderMaterial lives on the CRTOverlay ColorRect inside CRTLayer (CanvasLayer).
+	# CRT setup
 	var overlay := $CRTLayer/CRTOverlay
 	if overlay.material is ShaderMaterial:
 		crt_material = overlay.material as ShaderMaterial
 		crt_material.set_shader_parameter("resolution", Vector2(1920.0, 1080.0))
 
-	for i in CARD_COUNT:
+	# 👉 DECK SPAWN (OUTSIDE the shader if-block)
+	var deck_paths = _load_deck()
+
+	for path in deck_paths:
 		var card = card_scene.instantiate()
 		add_child(card)
 		card.setup(deck_pos)
+
+		# 👉 THIS is where it belongs
+		card.set_card_texture(path, Vector2(CARD_WIDTH, CARD_HEIGHT))
+
 		all_cards.append(card)
 		deck_cards.append(card)
 
+func _load_deck() -> Array:
+	var deck := []
+	var base_path := "res://assets/cards/"
 
-# Spread deck cards diagonally — matches Lua align() exactly.
+	var suits = DirAccess.get_directories_at(base_path)
+
+	for suit in suits:
+		var suit_path = base_path + suit + "/"
+		var files = DirAccess.get_files_at(suit_path)
+
+		for file in files:
+			if file.get_extension().to_lower() == "webp":
+				deck.append(suit_path + file)
+
+	deck.shuffle()
+	return deck
+
 func _align() -> void:
-	var count := deck_cards.size()
-	if count == 0:
-		return
-	var step := 10.0 / count
-	for i in count:
+	var offset := Vector2(-0.25, 0.25)  # left + down
+
+	for i in deck_cards.size():
 		var card = deck_cards[i]
 		if not card.dragging:
-			card.target_pos = Vector2(deck_pos.x - step * i, deck_pos.y + step * i)
-
+			card.target_pos = deck_pos + offset * i
 
 func _process(dt: float) -> void:
 	elapsed += dt

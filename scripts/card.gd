@@ -13,6 +13,21 @@ func setup(pos: Vector2) -> void:
 	position = pos
 	target_pos = pos
 
+var card_size := Vector2.ZERO
+
+func set_card_texture(path: String, size: Vector2) -> void:
+	card_size = size
+
+	var tex = load(path)
+	if tex:
+		var sprite := $Sprite2D
+		sprite.texture = tex
+
+		var tex_size: Vector2 = tex.get_size()
+		sprite.scale = Vector2(
+			card_size.x / tex_size.x,
+			card_size.y / tex_size.y
+		)
 
 func move(dt: float) -> void:
 	if position != target_pos or velocity != Vector2.ZERO:
